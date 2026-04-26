@@ -166,6 +166,55 @@
       box-shadow: 0 0 0 1px #8ab4f8;
     }
 
+    /* カラム幅設定 (PCベース) */
+    .col-h1 {
+      width: 14%;
+    }
+
+    .col-h2 {
+      width: 10%;
+    }
+
+    .col-h3 {
+      width: 11%;
+    }
+
+    .col-h4 {
+      width: 40%;
+    }
+
+    .col-h5 {
+      width: 10%;
+    }
+
+    .col-h6 {
+      width: 15%;
+    }
+
+    .col-w1 {
+      width: 22%;
+    }
+
+    .col-w2 {
+      width: 46%;
+    }
+
+    .col-w3 {
+      width: 7%;
+    }
+
+    .col-w4 {
+      width: 25%;
+    }
+
+    .col-d1 {
+      width: 75%;
+    }
+
+    .col-d2 {
+      width: 25%;
+    }
+
     /* ヘッダーテーブル (Table 1) */
     .header-table td {
       height: 32px;
@@ -292,107 +341,30 @@
     }
 
 
-    /* =========================================
-           スマホ・タブレット向けレスポンシブ対応
-           ========================================= */
-    @media screen and (max-width: 768px) {
+    /* スマホ・タブレット向けレスポンシブ対応 */
+    @media screen and (max-width: 860px) {
       body {
-        padding: 10px;
+        padding: 10px 5px;
       }
 
       .controls {
         padding: 10px;
         gap: 8px;
+        max-width: 100%;
         flex-wrap: wrap;
+        justify-content: center;
       }
 
       button {
-        font-size: 12px;
-        padding: 8px;
-        flex: 1 1 calc(33.333% - 8px);
+        font-size: 13px;
+        padding: 10px 14px;
+        flex: 1 1 auto;
+        min-width: 80px;
       }
 
+      /* JS scaling で対応するため page 自体はそのまま */
       .page {
-        padding: 6mm;
-        aspect-ratio: auto;
-        /* コンテンツに合わせて伸びるように変更 */
-        min-height: 141vw;
-        /* A4の比率の最低高さ */
-      }
-
-      /* 文字サイズと余白の縮小 */
-      td,
-      th {
-        font-size: 11px;
-        padding: 2px 4px;
-      }
-
-      .title-text {
-        font-size: 17px;
-      }
-
-      .date-section {
-        gap: 4px;
-      }
-
-      .date-input {
-        width: 25px;
-      }
-
-      .danger-title {
-        font-size: 11px;
-        letter-spacing: 0.2em;
-      }
-
-      .confirm-title {
-        font-size: 11px;
-        letter-spacing: 0;
-      }
-
-      .memo-title {
-        font-size: 12px;
-      }
-
-      .memo-section {
-        padding: 6px 8px;
-      }
-
-      /* 各行の高さをスマホ用に調整 */
-      .header-table td {
-        height: auto;
-        min-height: 28px;
-      }
-
-      .worker-table td {
-        height: auto;
-        min-height: 30px;
-      }
-
-      .danger-table td {
-        height: auto;
-        min-height: 30px;
-      }
-
-      .time-box {
-        padding: 0 2px;
-      }
-
-      /* フッター縮小 */
-      .footer-info {
-        font-size: 10px;
-      }
-
-      .company-name {
-        font-size: 14px;
-      }
-
-      .contact-info {
-        font-size: 10px;
-      }
-
-      svg {
-        width: 22px;
-        height: 26px;
+        transform-origin: top left;
       }
     }
 
@@ -436,6 +408,55 @@
       .edit-mode .editable {
         background-color: transparent !important;
       }
+
+      /* 印刷時は必ず元の比率に戻す */
+      .col-h1 {
+        width: 14% !important;
+      }
+
+      .col-h2 {
+        width: 10% !important;
+      }
+
+      .col-h3 {
+        width: 11% !important;
+      }
+
+      .col-h4 {
+        width: 40% !important;
+      }
+
+      .col-h5 {
+        width: 10% !important;
+      }
+
+      .col-h6 {
+        width: 15% !important;
+      }
+
+      .col-w1 {
+        width: 22% !important;
+      }
+
+      .col-w2 {
+        width: 46% !important;
+      }
+
+      .col-w3 {
+        width: 7% !important;
+      }
+
+      .col-w4 {
+        width: 25% !important;
+      }
+
+      .col-d1 {
+        width: 75% !important;
+      }
+
+      .col-d2 {
+        width: 25% !important;
+      }
     }
   </style>
 </head>
@@ -462,12 +483,12 @@
       <!-- Table 1: ヘッダー情報 -->
       <table class="header-table">
         <colgroup>
-          <col style="width: 14%;">
-          <col style="width: 10%;">
-          <col style="width: 11%;">
-          <col style="width: 40%;">
-          <col style="width: 10%;">
-          <col style="width: 15%;">
+          <col class="col-h1">
+          <col class="col-h2">
+          <col class="col-h3">
+          <col class="col-h4">
+          <col class="col-h5">
+          <col class="col-h6">
         </colgroup>
         <tr>
           <td colspan="3" style="text-align: center;">
@@ -508,10 +529,10 @@
       <!-- Table 2: 作業員リスト -->
       <table class="worker-table table-2">
         <colgroup>
-          <col style="width: 22%;">
-          <col style="width: 46%;">
-          <col style="width: 7%;">
-          <col style="width: 25%;">
+          <col class="col-w1">
+          <col class="col-w2">
+          <col class="col-w3">
+          <col class="col-w4">
         </colgroup>
         <tr>
           <th>作 業 員 名</th>
@@ -543,8 +564,8 @@
       <!-- Table 3: 危険ポイント -->
       <table class="danger-table table-3">
         <colgroup>
-          <col style="width: 75%;">
-          <col style="width: 25%;">
+          <col class="col-d1">
+          <col class="col-d2">
         </colgroup>
         <tr>
           <td class="danger-title">本 日 の 危 険 ポ イ ン ト</td>
@@ -635,6 +656,23 @@
       }
     }
 
+    // 画面幅に合わせてページをスケーリング
+    function scalePageToFit() {
+      const page = document.getElementById('capture-area');
+      const naturalWidth = 794; // A4 ≈ 210mm at 96dpi
+      const available = window.innerWidth - 10;
+      if (available < naturalWidth) {
+        const scale = available / naturalWidth;
+        page.style.transform = `scale(${scale})`;
+        page.style.marginBottom = `${page.offsetHeight * (scale - 1)}px`;
+      } else {
+        page.style.transform = '';
+        page.style.marginBottom = '';
+      }
+    }
+    window.addEventListener('load', scalePageToFit);
+    window.addEventListener('resize', scalePageToFit);
+
     // PDF保存機能（1ページ収容の確実化＋スマホでもPCサイズで出力）
     async function saveAsPDF() {
       const element = document.getElementById('capture-area');
@@ -651,12 +689,16 @@
       const originalHeight = element.style.height;
       const originalAspectRatio = element.style.aspectRatio;
       const originalPadding = element.style.padding;
+      const originalTransform = element.style.transform;
+      const originalMarginBottom = element.style.marginBottom;
 
       element.style.width = '210mm';
       element.style.maxWidth = 'none';
       element.style.height = '296.5mm';
       element.style.aspectRatio = 'auto';
       element.style.padding = '15mm';
+      element.style.transform = '';
+      element.style.marginBottom = '';
 
       const opt = {
         margin: 0,
@@ -679,6 +721,8 @@
         element.style.height = originalHeight;
         element.style.aspectRatio = originalAspectRatio;
         element.style.padding = originalPadding;
+        element.style.transform = originalTransform;
+        element.style.marginBottom = originalMarginBottom;
 
         if (wasEditMode) {
           document.body.classList.add('edit-mode');
