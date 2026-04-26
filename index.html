@@ -79,13 +79,9 @@
 
     /* A4用紙設定 (レスポンシブ対応) */
     .page {
-      width: 100%;
-      /* スマホ画面に対応するため100%に */
-      max-width: var(--paper-width);
-      /* 最大幅はA4サイズまで */
-      height: auto;
-      aspect-ratio: 21 / 29.7;
-      /* A4の縦横比を維持 */
+      width: var(--paper-width);
+      /* PC・スマホ共通でA4サイズに固定し、スマホではJSで縮小(scale)させる */
+      height: var(--paper-height);
       background: white;
       box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
       padding: 15mm;
@@ -94,6 +90,7 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      transform-origin: top center;
     }
 
     /* フォーム全体を囲む外枠 */
@@ -364,7 +361,7 @@
 
       /* JS scaling で対応するため page 自体はそのまま */
       .page {
-        transform-origin: top left;
+        transform-origin: top center;
       }
     }
 
@@ -659,14 +656,15 @@
     // 画面幅に合わせてページをスケーリング
     function scalePageToFit() {
       const page = document.getElementById('capture-area');
-      const naturalWidth = 794; // A4 ≈ 210mm at 96dpi
-      const available = window.innerWidth - 10;
-      if (available < naturalWidth) {
+      // 一旦スケールをリセットして正しい元の幅を取得する
+      page.style.transform = '';
+      const naturalWidth = page.offsetWidth;
+      const available = window.innerWidth - 20; // 余白分
+      if (naturalWidth > 0 && available < naturalWidth) {
         const scale = available / naturalWidth;
         page.style.transform = `scale(${scale})`;
         page.style.marginBottom = `${page.offsetHeight * (scale - 1)}px`;
       } else {
-        page.style.transform = '';
         page.style.marginBottom = '';
       }
     }
