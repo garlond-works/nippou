@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>作業日報書 - 編集・印刷システム</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    :root {
+      /* 実際の用紙に近いインクブルー */
+      --form-blue: #0066b3;
+      --bg-color: #f0f2f5;
+      --paper-width: 210mm;
+      --paper-height: 297mm;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* 操作パネル */
+    .controls {
+      background: white;
+      padding: 15px 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+      display: flex;
+      gap: 15px;
+      position: sticky;
+      top: 10px;
+      z-index: 100;
+      width: 100%;
+      max-width: 600px;
+      box-sizing: border-box;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 14px;
+      flex: 1;
+    }
+
+    .btn-edit {
+      background-color: #4a5568;
+      color: white;
+    }
+
+    .btn-print {
+      background-color: #3182ce;
+      color: white;
+    }
+
+    .btn-pdf {
+      background-color: #e53e3e;
+      color: white;
+    }
+
+    button:hover {
+      opacity: 0.8;
+      transform: translateY(-1px);
+    }
+
+    /* A4用紙設定 (レスポンシブ対応) */
+    .page {
+      width: 100%;
+      /* スマホ画面に対応するため100%に */
+      max-width: var(--paper-width);
+      /* 最大幅はA4サイズまで */
+      height: auto;
+      aspect-ratio: 21 / 29.7;
+      /* A4の縦横比を維持 */
+      background: white;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+      padding: 15mm;
+      box-sizing: border-box;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* フォーム全体を囲む外枠 */
+    .form-wrapper {
+      border: 1.5px solid var(--form-blue);
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      color: #333;
+    }
+
+    /* テーブル共通設定 */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    td,
+    th {
+      border: 1px solid var(--form-blue);
+      padding: 4px 8px;
+      font-size: 14px;
+      vertical-align: middle;
+    }
+
+    /* テーブル外周の線を消してwrapperの線を生かす */
+    table {
+      border-left: none;
+      border-right: none;
+    }
+
+    table td:first-child,
+    table th:first-child {
+      border-left: none;
+    }
+
+    table td:last-child,
+    table th:last-child {
+      border-right: none;
+    }
+
+    table tr:first-child td,
+    table tr:first-child th {
+      border-top: none;
+    }
+
+    /* テーブル同士の結合部の二重線防止 */
+    .table-2,
+    .table-3 {
+      margin-top: -1px;
+    }
+
+    /* 入力エリア */
+    .editable {
+      outline: none;
+      min-height: 1.5em;
+      line-height: 1.5em;
+      word-wrap: break-word;
+    }
+
+    .edit-mode .editable {
+      background-color: #f0f8ff;
+      border-radius: 2px;
+      padding: 0 4px;
+    }
+
+    .edit-mode .editable:focus {
+      background-color: #e1f0fc;
+      box-shadow: 0 0 0 1px #8ab4f8;
+    }
+
+    /* ヘッダーテーブル (Table 1) */
+    .header-table td {
+      height: 32px;
+    }
+
+    .title-text {
+      font-size: 22px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .date-section {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .date-input {
+      width: 30px;
+      text-align: left;
+    }
+
+    /* 作業員テーブル (Table 2) */
+    .worker-table th {
+      font-weight: normal;
+      text-align: center;
+      letter-spacing: 0.1em;
+      height: 28px;
+    }
+
+    .worker-table td {
+      height: 35px;
+    }
+
+    .time-box {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 10px;
+    }
+
+    .time-input {
+      width: 40%;
+      text-align: left;
+    }
+
+    /* 危険ポイントテーブル (Table 3) */
+    .danger-table td {
+      height: 35px;
+    }
+
+    .danger-title {
+      text-align: center;
+      letter-spacing: 0.6em;
+      font-size: 15px;
+    }
+
+    .confirm-title {
+      text-align: center;
+      letter-spacing: 0.2em;
+      font-size: 14px;
+    }
+
+    /* 連絡事項エリア */
+    .memo-section {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 10px 15px;
+      border-top: 1px solid var(--form-blue);
+      margin-top: -1px;
+    }
+
+    .memo-title {
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .memo-content {
+      flex-grow: 1;
+      vertical-align: top;
+    }
+
+    /* フッター */
+    .footer-info {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      font-size: 13px;
+      line-height: 1.4;
+      color: #222;
+    }
+
+    .slogan {
+      text-align: left;
+      letter-spacing: 0.05em;
+    }
+
+    .company-meta {
+      text-align: right;
+      font-family: "MS PGothic", "Hiragino Kaku Gothic ProN", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .company-name-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .company-name {
+      font-size: 18px;
+      font-weight: bold;
+      letter-spacing: 0.1em;
+    }
+
+    .contact-info {
+      letter-spacing: 0.1em;
+      font-size: 14px;
+    }
+
+
+    /* =========================================
+           スマホ・タブレット向けレスポンシブ対応
+           ========================================= */
+    @media screen and (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      .controls {
+        padding: 10px;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        font-size: 12px;
+        padding: 8px;
+        flex: 1 1 calc(33.333% - 8px);
+      }
+
+      .page {
+        padding: 6mm;
+        aspect-ratio: auto;
+        /* コンテンツに合わせて伸びるように変更 */
+        min-height: 141vw;
+        /* A4の比率の最低高さ */
+      }
+
+      /* 文字サイズと余白の縮小 */
+      td,
+      th {
+        font-size: 11px;
+        padding: 2px 4px;
+      }
+
+      .title-text {
+        font-size: 17px;
+      }
+
+      .date-section {
+        gap: 4px;
+      }
+
+      .date-input {
+        width: 25px;
+      }
+
+      .danger-title {
+        font-size: 11px;
+        letter-spacing: 0.2em;
+      }
+
+      .confirm-title {
+        font-size: 11px;
+        letter-spacing: 0;
+      }
+
+      .memo-title {
+        font-size: 12px;
+      }
+
+      .memo-section {
+        padding: 6px 8px;
+      }
+
+      /* 各行の高さをスマホ用に調整 */
+      .header-table td {
+        height: auto;
+        min-height: 28px;
+      }
+
+      .worker-table td {
+        height: auto;
+        min-height: 30px;
+      }
+
+      .danger-table td {
+        height: auto;
+        min-height: 30px;
+      }
+
+      .time-box {
+        padding: 0 2px;
+      }
+
+      /* フッター縮小 */
+      .footer-info {
+        font-size: 10px;
+      }
+
+      .company-name {
+        font-size: 14px;
+      }
+
+      .contact-info {
+        font-size: 10px;
+      }
+
+      svg {
+        width: 22px;
+        height: 26px;
+      }
+    }
+
+    /* 印刷用設定 */
+    @media print {
+      body {
+        background: none;
+        padding: 0;
+      }
+
+      .controls {
+        display: none !important;
+      }
+
+      .page {
+        box-shadow: none;
+        margin: 0;
+        padding: 15mm !important;
+        width: 210mm !important;
+        height: 297mm !important;
+        max-width: none !important;
+        aspect-ratio: auto !important;
+        page-break-after: avoid;
+      }
+
+      td,
+      th {
+        font-size: 14px !important;
+        padding: 4px 8px !important;
+      }
+
+      .title-text {
+        font-size: 22px !important;
+      }
+
+      .danger-title {
+        font-size: 15px !important;
+        letter-spacing: 0.6em !important;
+      }
+
+      .edit-mode .editable {
+        background-color: transparent !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="edit-mode">
+
+  <!-- 操作パネル -->
+  <div class="controls">
+    <button class="btn-edit" onclick="toggleEdit()">
+      <span id="edit-icon">👁️</span> <span id="edit-text">プレビュー</span>
+    </button>
+    <button class="btn-print" onclick="window.print()">
+      🖨️ 印刷
+    </button>
+    <button class="btn-pdf" onclick="saveAsPDF()">
+      📄 PDF保存
+    </button>
+  </div>
+
+  <!-- 帳票エリア -->
+  <div id="capture-area" class="page">
+    <div class="form-wrapper">
+
+      <!-- Table 1: ヘッダー情報 -->
+      <table class="header-table">
+        <colgroup>
+          <col style="width: 14%;">
+          <col style="width: 10%;">
+          <col style="width: 11%;">
+          <col style="width: 40%;">
+          <col style="width: 10%;">
+          <col style="width: 15%;">
+        </colgroup>
+        <tr>
+          <td colspan="3" style="text-align: center;">
+            <div class="date-section">
+              <span class="editable date-input" contenteditable="true" style="width: 40px;"></span> 年
+              <span class="editable date-input" contenteditable="true"></span> 月
+              <span class="editable date-input" contenteditable="true"></span> 日
+            </div>
+          </td>
+          <td class="title-text">作 業 日 報 書</td>
+          <td style="text-align: center; font-size: 13px;">責任者</td>
+          <td>
+            <div class="editable" contenteditable="true" style="width: 100%; text-align: left;"></div>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="4">
+            <div style="display: flex; align-items: center;">
+              <div class="editable" contenteditable="true" style="flex-grow: 1; text-align: left;"></div>
+              <span style="white-space: nowrap; margin-left: 10px; margin-right: 5px;">殿</span>
+            </div>
+          </td>
+          <td style="text-align: center; font-size: 13px;">監督名</td>
+          <td style="position: relative;">
+            <div class="editable" contenteditable="true"
+              style="width: 100%; text-align: left; padding-right: 15px; box-sizing: border-box;"></div>
+            <span style="position: absolute; bottom: 4px; right: 8px; pointer-events: none;">印</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="text-align: center; letter-spacing: 0.2em;">現場名</td>
+          <td colspan="5">
+            <div class="editable" contenteditable="true" style="width: 100%; text-align: left;"></div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Table 2: 作業員リスト -->
+      <table class="worker-table table-2">
+        <colgroup>
+          <col style="width: 22%;">
+          <col style="width: 46%;">
+          <col style="width: 7%;">
+          <col style="width: 25%;">
+        </colgroup>
+        <tr>
+          <th>作 業 員 名</th>
+          <th>作　業　内　容</th>
+          <th>健康</th>
+          <th>作 業 時 間</th>
+        </tr>
+        <!-- 8行分のデータ枠 -->
+        <script>
+          for (let i = 0; i < 8; i++) {
+            document.write(`
+                            <tr>
+                                <td><div class="editable" contenteditable="true" style="width: 100%; text-align: left;"></div></td>
+                                <td><div class="editable" contenteditable="true" style="width: 100%; text-align: left;"></div></td>
+                                <td><div class="editable" contenteditable="true" style="width: 100%; text-align: left;"></div></td>
+                                <td>
+                                    <div class="time-box">
+                                        <div class="editable time-input" contenteditable="true"></div>
+                                        <div>～</div>
+                                        <div class="editable time-input" contenteditable="true"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `);
+          }
+        </script>
+      </table>
+
+      <!-- Table 3: 危険ポイント -->
+      <table class="danger-table table-3">
+        <colgroup>
+          <col style="width: 75%;">
+          <col style="width: 25%;">
+        </colgroup>
+        <tr>
+          <td class="danger-title">本 日 の 危 険 ポ イ ン ト</td>
+          <td class="confirm-title">確 認</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="editable" contenteditable="true" style="width: 100%; text-align: left;"></div>
+          </td>
+          <td>
+            <div class="editable" contenteditable="true" style="width: 100%; text-align: left;"></div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div class="editable" contenteditable="true" style="width: 100%; text-align: left;"></div>
+          </td>
+          <td>
+            <div class="editable" contenteditable="true" style="width: 100%; text-align: left;"></div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div class="editable" contenteditable="true" style="width: 100%; text-align: left;"></div>
+          </td>
+          <td>
+            <div class="editable" contenteditable="true" style="width: 100%; text-align: left;"></div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- 連絡事項エリア -->
+      <div class="memo-section">
+        <div class="memo-title">◎連絡事項</div>
+        <div class="editable memo-content" contenteditable="true"></div>
+      </div>
+
+    </div>
+
+    <!-- フッター情報 -->
+    <div class="footer-info">
+      <div class="slogan">
+        奉仕の心をモットーに<br>
+        建設現場0災害を達成し、<br>
+        社会に貢献する。
+      </div>
+      <div class="company-meta">
+        <div class="company-name-row">
+          <!-- SVGによるロゴマーク再現 -->
+          <svg width="28" height="34" viewBox="0 0 24 30" style="margin-right: 8px;">
+            <rect x="2" y="1" width="1.5" height="20" fill="#0066b3" />
+            <circle cx="8" cy="11" r="2" fill="#0066b3" />
+            <path d="M 14 1 L 22 1 L 18 11 L 22 21 L 14 21 L 18 11 Z" fill="none" stroke="#0066b3" stroke-width="1.2"
+              stroke-linejoin="round" />
+            <text x="12" y="28" font-size="6.5" font-family="sans-serif" fill="#0066b3" text-anchor="middle"
+              font-weight="bold">HOKEN</text>
+          </svg>
+          <span class="company-name">(株)奉建社</span>
+        </div>
+        <div class="contact-info">
+          TEL 048(965)2555<br>
+          FAX 048(965)2888
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let isEditMode = true;
+
+    // 編集モード切替機能
+    function toggleEdit() {
+      isEditMode = !isEditMode;
+      const btnText = document.getElementById('edit-text');
+      const btnIcon = document.getElementById('edit-icon');
+      const editables = document.querySelectorAll('.editable');
+
+      if (isEditMode) {
+        document.body.classList.add('edit-mode');
+        btnText.innerText = "プレビュー";
+        btnIcon.innerText = "👁️";
+        editables.forEach(el => el.contentEditable = "true");
+      } else {
+        document.body.classList.remove('edit-mode');
+        btnText.innerText = "編集";
+        btnIcon.innerText = "✏️";
+        editables.forEach(el => el.contentEditable = "false");
+      }
+    }
+
+    // PDF保存機能（1ページ収容の確実化＋スマホでもPCサイズで出力）
+    async function saveAsPDF() {
+      const element = document.getElementById('capture-area');
+
+      // 編集モード特有の背景色などを一時的に解除
+      const wasEditMode = isEditMode;
+      if (isEditMode) {
+        document.body.classList.remove('edit-mode');
+      }
+
+      // PDF化の瞬間だけ強制的にA4の絶対サイズを適用（スマホでのレイアウト崩れを防ぐ）
+      const originalWidth = element.style.width;
+      const originalMaxWidth = element.style.maxWidth;
+      const originalHeight = element.style.height;
+      const originalAspectRatio = element.style.aspectRatio;
+      const originalPadding = element.style.padding;
+
+      element.style.width = '210mm';
+      element.style.maxWidth = 'none';
+      element.style.height = '296.5mm';
+      element.style.aspectRatio = 'auto';
+      element.style.padding = '15mm';
+
+      const opt = {
+        margin: 0,
+        filename: '作業日報書.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        // windowWidth: 1200を指定することで、スマホで操作しても常にPC版のレイアウトでPDF化される
+        html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 1200 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      try {
+        await html2pdf().set(opt).from(element).save();
+      } catch (error) {
+        console.error("PDF生成に失敗しました:", error);
+        alert("PDFの生成に失敗しました。");
+      } finally {
+        // スタイルを元のレスポンシブな状態に戻す
+        element.style.width = originalWidth;
+        element.style.maxWidth = originalMaxWidth;
+        element.style.height = originalHeight;
+        element.style.aspectRatio = originalAspectRatio;
+        element.style.padding = originalPadding;
+
+        if (wasEditMode) {
+          document.body.classList.add('edit-mode');
+        }
+      }
+    }
+  </script>
+</body>
+
+</html>
