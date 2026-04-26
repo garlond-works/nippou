@@ -77,6 +77,12 @@
       transform: translateY(-1px);
     }
 
+    /* スケーリング用ラッパー */
+    #page-wrapper {
+      margin: 0 auto;
+      overflow: hidden;
+    }
+
     /* A4用紙設定 (レスポンシブ対応) */
     .page {
       width: var(--paper-width);
@@ -90,7 +96,7 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      transform-origin: top center;
+      transform-origin: top left;
     }
 
     /* フォーム全体を囲む外枠 */
@@ -474,8 +480,9 @@
   </div>
 
   <!-- 帳票エリア -->
-  <div id="capture-area" class="page">
-    <div class="form-wrapper">
+  <div id="page-wrapper">
+    <div id="capture-area" class="page">
+      <div class="form-wrapper">
 
       <!-- Table 1: ヘッダー情報 -->
       <table class="header-table">
@@ -629,6 +636,7 @@
       </div>
     </div>
   </div>
+  </div>
 
   <script>
     let isEditMode = true;
@@ -655,17 +663,22 @@
 
     // 画面幅に合わせてページをスケーリング
     function scalePageToFit() {
+      const wrapper = document.getElementById('page-wrapper');
       const page = document.getElementById('capture-area');
       // 一旦スケールをリセットして正しい元の幅を取得する
       page.style.transform = '';
-      const naturalWidth = page.offsetWidth;
+      wrapper.style.width = '';
+      wrapper.style.height = '';
+      
+      const naturalWidth = page.offsetWidth; 
+      const naturalHeight = page.offsetHeight;
       const available = window.innerWidth - 20; // 余白分
       if (naturalWidth > 0 && available < naturalWidth) {
         const scale = available / naturalWidth;
         page.style.transform = `scale(${scale})`;
-        page.style.marginBottom = `${page.offsetHeight * (scale - 1)}px`;
-      } else {
-        page.style.marginBottom = '';
+        
+        wrapper.style.width = `${naturalWidth * scale}px`;
+        wrapper.style.height = `${naturalHeight * scale}px`;
       }
     }
     window.addEventListener('load', scalePageToFit);
@@ -682,6 +695,12 @@
       }
 
       // PDF化の瞬間だけ強制的にA4の絶対サイズを適用（スマホでのレイアウト崩れを防ぐ）
+      const wrapper = document.getElementById('page-wrapper');
+      const originalWrapperWidth = wrapper.style.width;
+      const originalWrapperHeight = wrapper.style.height;
+      wrapper.style.width = '';
+      wrapper.style.height = '';
+
       const originalWidth = element.style.width;
       const originalMaxWidth = element.style.maxWidth;
       const originalHeight = element.style.height;
@@ -721,6 +740,9 @@
         element.style.padding = originalPadding;
         element.style.transform = originalTransform;
         element.style.marginBottom = originalMarginBottom;
+
+        wrapper.style.width = originalWrapperWidth;
+        wrapper.style.height = originalWrapperHeight;
 
         if (wasEditMode) {
           document.body.classList.add('edit-mode');
